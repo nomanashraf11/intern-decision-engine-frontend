@@ -32,24 +32,34 @@ class _LoanFormState extends State<LoanForm> {
   // Only submits if the form inputs are validated.
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
+      print('Submitting form...');
+      print('Loan Amount: $_loanAmount');
+      print('Loan Period: $_loanPeriod');
+
       final result = await _apiService.requestLoanDecision(
           _nationalId, _loanAmount, _loanPeriod);
-      setState(() {
-        int tempAmount = int.parse(result['loanAmount'].toString());
-        int tempPeriod = int.parse(result['loanPeriod'].toString());
 
-        if (tempAmount <= _loanAmount || tempPeriod > _loanPeriod) {
-          _loanAmountResult = int.parse(result['loanAmount'].toString());
-          _loanPeriodResult = int.parse(result['loanPeriod'].toString());
-        } else {
-          _loanAmountResult = _loanAmount;
-          _loanPeriodResult = _loanPeriod;
-        }
-        _errorMessage = result['errorMessage'].toString();
+      print('API response: $result');
+
+      setState(() {
+        int tempAmount = int.tryParse(result['loanAmount'].toString()) ?? 0;
+        int tempPeriod = int.tryParse(result['loanPeriod'].toString()) ?? 0;
+
+        print('Processed Amount: $tempAmount');
+        print('Processed Period: $tempPeriod');
+
+        _loanAmountResult = tempAmount;
+        _loanPeriodResult = tempPeriod;
+
+        _errorMessage = result['errorMessage']?.toString() ?? '';
+        print('Error message: $_errorMessage');
       });
     } else {
-      _loanAmountResult = 0;
-      _loanPeriodResult = 0;
+      setState(() {
+        _loanAmountResult = 0;
+        _loanPeriodResult = 0;
+        _errorMessage = ''; // Reset error message if form validation fails
+      });
     }
   }
 
@@ -133,7 +143,7 @@ class _LoanFormState extends State<LoanForm> {
                   Slider.adaptive(
                     value: _loanPeriod.toDouble(),
                     min: 12,
-                    max: 60,
+                    max: 48,
                     divisions: 40,
                     label: '$_loanPeriod months',
                     activeColor: AppColors.secondaryColor,
@@ -152,7 +162,7 @@ class _LoanFormState extends State<LoanForm> {
                           padding: EdgeInsets.only(left: 12),
                           child: Align(
                               alignment: Alignment.centerLeft,
-                              child: Text('6 months')),
+                              child: Text('12 months')),
                         ),
                       ),
                       Expanded(
@@ -160,7 +170,7 @@ class _LoanFormState extends State<LoanForm> {
                           padding: EdgeInsets.only(right: 12),
                           child: Align(
                             alignment: Alignment.centerRight,
-                            child: Text('60 months'),
+                            child: Text('48 months'),
                           ),
                         ),
                       )
@@ -175,15 +185,24 @@ class _LoanFormState extends State<LoanForm> {
           Column(
             children: [
               Text(
-                  'Approved Loan Amount: ${_loanAmountResult != 0 ? _loanAmountResult : "--"} €'),
+                'Assspproved Loan Amount: ${_loanAmountResult != 0 ? _loanAmountResult : "--"} €',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8.0),
               Text(
-                  'Approved Loan Period: ${_loanPeriodResult != 0 ? _loanPeriodResult : "--"} months'),
+                'Approved Loan Period: ${_loanPeriodResult != 0 ? _loanPeriodResult : "--"} months',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              // Show error message if available
               Visibility(
-                  visible: _errorMessage != '',
-                  child: Text(_errorMessage, style: errorMedium))
+                visible: _errorMessage.isNotEmpty,
+                child: Text(
+                  _errorMessage,
+                  style: TextStyle(color: Colors.red, fontSize: 14),
+                ),
+              ),
             ],
-          ),
+          )
         ],
       ),
     );
